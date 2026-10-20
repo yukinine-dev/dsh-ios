@@ -1,6 +1,6 @@
 name: DshPanel
 options:
-  bundleIdPrefix: com.egor.dshpanel
+  bundleIdPrefix: com.dsh.ios
   deploymentTarget:
     iOS: "16.2"
   createIntermediateGroups: true
@@ -31,10 +31,10 @@ targets:
         NSSupportsLiveActivities: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.egor.dshpanel
+        PRODUCT_BUNDLE_IDENTIFIER: com.dsh.ios
         PRODUCT_NAME: DshPanel
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "1.1"
+        CURRENT_PROJECT_VERSION: "2"
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_VERSION: "5.0"
         GENERATE_INFOPLIST_FILE: false
@@ -60,10 +60,10 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.egor.dshpanel.DshActivityWidget
+        PRODUCT_BUNDLE_IDENTIFIER: com.dsh.ios.DshActivityWidget
         PRODUCT_NAME: DshActivityWidget
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "1.1"
+        CURRENT_PROJECT_VERSION: "2"
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_VERSION: "5.0"
         GENERATE_INFOPLIST_FILE: false
