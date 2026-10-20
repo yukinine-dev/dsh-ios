@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
+permissions:
+  contents: write # нужно, чтобы создавать GitHub Release с .ipa
+
 jobs:
   build:
     runs-on: macos-15
@@ -44,3 +47,21 @@ jobs:
         with:
           name: DshPanel-ipa
           path: build/DshPanel.ipa
+
+      - name: Версия из project.yml
+        id: ver
+        run: |
+          version=$(grep -m1 'MARKETING_VERSION' project.yml | sed -E 's/.*"([^"]+)".*/\1/')
+          build=$(grep -m1 'CURRENT_PROJECT_VERSION' project.yml | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "tag=v$version-$build" >> "$GITHUB_OUTPUT"
+
+      # Artifacts в Actions всегда отдаются в zip-обёртке — это ограничение самого механизма.
+      # Чтобы можно было скачать голый .ipa без лишнего zip, публикуем его отдельно как
+      # GitHub Release asset: по тегу версии из project.yml, файл отдаётся как есть.
+      - name: Release .ipa (без zip-обёртки)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: DshPanel ${{ steps.ver.outputs.tag }}
+          files: build/DshPanel.ipa
+          make_latest: true
