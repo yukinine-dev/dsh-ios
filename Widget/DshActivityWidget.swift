@@ -17,19 +17,17 @@ struct DshActivityWidget: Widget {
                         .foregroundStyle(context.state.isWaiting ? .orange : .green)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.attributes.title)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                DynamicIslandExpandedRegion(.center) {
-                    // Пока агент активно работает — живой секундомер на всю ширину острова
-                    // вместо статичного текста (системный Text(timerInterval:), без push).
+                    // .center у развёрнутого острова перекрывается датчиком/камерой —
+                    // поэтому секундомер живёт справа, в .trailing, а не по центру.
                     if context.state.isActive {
                         Text(timerInterval: context.state.startedAt...farFuture, countsDown: false)
                             .monospacedDigit()
                             .font(.title3.bold())
                             .foregroundStyle(.green)
-                            .frame(maxWidth: .infinity)
+                    } else {
+                        Text(context.attributes.title)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
