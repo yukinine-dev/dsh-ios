@@ -1,0 +1,5 @@
+DshPanel.xcodeproj/
+build/
+DerivedData/
+*.xcuserstate
+.DS_Store
