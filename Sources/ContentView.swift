@@ -6,6 +6,7 @@ struct ContentView: View {
     @StateObject private var activity = LiveActivityManager()
 
     @State private var showSettings = false
+    @State private var showTestPanel = false
     @State private var reloadToken = 0
     @State private var goBackToken = 0
     @State private var canGoBack = false
@@ -39,6 +40,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
+        }
+        .sheet(isPresented: $showTestPanel) {
+            TestPanelView(activity: activity)
         }
         .onAppear {
             if !settings.isConfigured { showSettings = true }
@@ -76,8 +80,7 @@ struct ContentView: View {
             Spacer()
 
             Button {
-                NotificationManager.fire(title: "dsh", body: "Тестовое уведомление — всё работает")
-                activity.simulateDemo()
+                showTestPanel = true
             } label: {
                 Image(systemName: "bell.badge")
             }
@@ -107,6 +110,72 @@ struct ContentView: View {
                 .padding(.horizontal, 32)
             Button("Настройки") { showSettings = true }
                 .buttonStyle(.borderedProminent)
+        }
+    }
+}
+
+/// Экран для ручной проверки всех состояний без подключения к dsh web и без ИИ-агента —
+/// каждая кнопка дёргает тот же LiveActivityManager.handle(_:), что и реальные события,
+/// так что уведомления на переходах (например idle после running) срабатывают честно,
+/// как в реальной работе.
+struct TestPanelView: View {
+    @ObservedObject var activity: LiveActivityManager
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Уведомления") {
+                    Button("Тестовое уведомление") {
+                        NotificationManager.fire(title: "dsh", body: "Тестовое уведомление — всё работает")
+                    }
+                }
+
+                Section("Live Activity — отдельные состояния") {
+                    Button("🟢 Свободен (idle)") {
+                        activity.handle(.idle)
+                    }
+                    Button("🧠 Думает… (без деталей)") {
+                        activity.handle(.running(detail: nil))
+                    }
+                    Button("✍️ Пишет код") {
+                        activity.handle(.running(detail: "Пишет код"))
+                    }
+                    Button("📖 Читает файлы") {
+                        activity.handle(.running(detail: "Читает файлы"))
+                    }
+                    Button("⌨️ Выполняет команду") {
+                        activity.handle(.running(detail: "Выполняет команду"))
+                    }
+                    Button("🔍 Ищет по коду") {
+                        activity.handle(.running(detail: "Ищет по коду"))
+                    }
+                    Button("⚠️ Нужно подтверждение") {
+                        activity.handle(.waitingApproval("Нужно подтверждение: Edit"))
+                    }
+                    Button("❓ Агент задал вопрос") {
+                        activity.handle(.waitingApproval("Агент задал вопрос"))
+                    }
+                    Button("Завершить Activity", role: .destructive) {
+                        activity.handle(.disconnected)
+                    }
+                }
+
+                Section {
+                    Button("Прогнать все состояния подряд") {
+                        activity.simulateDemo()
+                    }
+                } footer: {
+                    Text("Все кнопки работают без сети и без dsh web — проверяй экран блокировки и Dynamic Island после каждого нажатия. Если Live Activity не появляется — проверь, что разрешение на неё дано в Настройках iOS → dsh.")
+                        .font(.footnote)
+                }
+            }
+            .navigationTitle("Тест")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Готово") { dismiss() }
+                }
+            }
         }
     }
 }
