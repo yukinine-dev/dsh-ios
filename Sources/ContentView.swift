@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var goBackToken = 0
     @State private var canGoBack = false
     @State private var isLoading = false
+    @State private var loadError: String?
 
     var body: some View {
         Group {
@@ -21,7 +22,12 @@ struct ContentView: View {
                         reloadToken: $reloadToken,
                         goBackToken: $goBackToken,
                         canGoBack: $canGoBack,
-                        isLoading: $isLoading
+                        isLoading: $isLoading,
+                        loadError: $loadError,
+                        // Стартуем events-клиент только после того, как страница сама уже
+                        // успешно догрузилась — чтобы не было гонки за один и тот же токен
+                        // между WebView и DshEventsClient (см. комментарий в WebView.swift).
+                        onFirstLoad: { events.start(serverURL: url) }
                     )
                     .ignoresSafeArea(edges: .bottom)
 
@@ -29,6 +35,26 @@ struct ContentView: View {
                         ProgressView()
                             .progressViewStyle(.linear)
                             .padding(.top, 1)
+                    }
+
+                    if let loadError {
+                        VStack(spacing: 12) {
+                            Image(systemName: "wifi.exclamationmark")
+                                .font(.system(size: 40))
+                                .foregroundStyle(.orange)
+                            Text("Не удалось загрузить страницу")
+                                .font(.headline)
+                            Text(loadError)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                            Button("Повторить") { reloadToken += 1 }
+                                .buttonStyle(.borderedProminent)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(.black.opacity(0.9))
                     }
                 }
                 .safeAreaInset(edge: .top) {
@@ -47,7 +73,8 @@ struct ContentView: View {
         .onAppear {
             if !settings.isConfigured { showSettings = true }
             NotificationManager.requestAuthorizationIfNeeded()
-            if let url = settings.serverURL { events.start(serverURL: url) }
+            // events.start() для самого первого открытия теперь не здесь, а в
+            // onFirstLoad у WebView — см. комментарий там же про гонку за токен.
         }
         .onChange(of: settings.serverURLString) { _ in
             if let url = settings.serverURL { events.start(serverURL: url) }

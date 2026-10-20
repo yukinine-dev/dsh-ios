@@ -10,6 +10,12 @@ struct WebView: UIViewRepresentable {
     @Binding var goBackToken: Int
     @Binding var canGoBack: Bool
     @Binding var isLoading: Bool
+    @Binding var loadError: String?
+    /// Вызывается ровно один раз — когда страница в первый раз успешно догрузилась.
+    /// Используется, чтобы DshEventsClient не лез за тем же токеном параллельно с
+    /// самим WebView (см. комментарий у didFireFirstLoad) — иначе получается гонка
+    /// за один и тот же токен, и кто-то из двух может остаться без сессии.
+    var onFirstLoad: (() -> Void)?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -43,6 +49,9 @@ struct WebView: UIViewRepresentable {
         weak var webView: WKWebView?
         var lastReloadToken: Int = 0
         var lastGoBackToken: Int = 0
+        /// true — первая успешная загрузка уже случилась, onFirstLoad больше не дёргаем
+        /// (иначе он срабатывал бы на каждый ручной Reload, а нам нужен только самый первый раз).
+        var didFireFirstLoad = false
 
         lazy var refreshControl: UIRefreshControl = {
             let rc = UIRefreshControl()
@@ -65,16 +74,23 @@ struct WebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             parent.isLoading = false
             parent.canGoBack = webView.canGoBack
+            parent.loadError = nil
             refreshControl.endRefreshing()
+            if !didFireFirstLoad {
+                didFireFirstLoad = true
+                parent.onFirstLoad?()
+            }
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             parent.isLoading = false
+            parent.loadError = error.localizedDescription
             refreshControl.endRefreshing()
         }
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             parent.isLoading = false
+            parent.loadError = error.localizedDescription
             refreshControl.endRefreshing()
         }
     }
