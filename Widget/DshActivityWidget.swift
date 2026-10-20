@@ -15,20 +15,24 @@ struct DshActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     Image(systemName: context.state.iconName)
                         .foregroundStyle(context.state.isWaiting ? .orange : .green)
+                        .frame(maxHeight: .infinity, alignment: .center)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     // .center у развёрнутого острова перекрывается датчиком/камерой —
                     // поэтому секундомер живёт справа, в .trailing, а не по центру.
-                    if context.state.isActive {
-                        Text(timerInterval: context.state.startedAt...farFuture, countsDown: false)
-                            .monospacedDigit()
-                            .font(.title3.bold())
-                            .foregroundStyle(.green)
-                    } else {
-                        Text(context.attributes.title)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    Group {
+                        if context.state.isActive {
+                            Text(timerInterval: context.state.startedAt...farFuture, countsDown: false)
+                                .monospacedDigit()
+                                .font(.title3.bold())
+                                .foregroundStyle(.green)
+                        } else {
+                            Text(context.attributes.title)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
+                    .frame(maxHeight: .infinity, alignment: .center)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     Text(context.state.statusText)
