@@ -125,10 +125,19 @@ struct TestPanelView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Уведомления") {
-                    Button("Тестовое уведомление") {
-                        NotificationManager.fire(title: "dsh", body: "Тестовое уведомление — всё работает")
+                Section {
+                    Button("Тестовое уведомление (через 3 сек)") {
+                        NotificationManager.fire(
+                            title: "dsh",
+                            body: "Тестовое уведомление — всё работает",
+                            delay: 3
+                        )
                     }
+                } header: {
+                    Text("Уведомления")
+                } footer: {
+                    Text("Нажми и за 3 секунды сверни приложение (кнопка Home / свайп вверх) — баннер должен появиться как обычное уведомление. Если приложение останется открытым, баннер тоже покажется сверху экрана.")
+                        .font(.footnote)
                 }
 
                 Section("Live Activity — отдельные состояния") {
