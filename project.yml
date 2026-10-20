@@ -2,14 +2,14 @@ name: DshPanel
 options:
   bundleIdPrefix: com.egor.dshpanel
   deploymentTarget:
-    iOS: "16.1"
+    iOS: "16.2"
   createIntermediateGroups: true
 
 targets:
   DshPanel:
     type: application
     platform: iOS
-    deploymentTarget: "16.1"
+    deploymentTarget: "16.2"
     sources:
       - path: Sources
       - path: SharedSources
@@ -48,7 +48,7 @@ targets:
   DshActivityWidget:
     type: app-extension
     platform: iOS
-    deploymentTarget: "16.1"
+    deploymentTarget: "16.2"
     sources:
       - path: Widget
       - path: SharedSources
