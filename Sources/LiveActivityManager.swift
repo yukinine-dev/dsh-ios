@@ -26,9 +26,9 @@ final class LiveActivityManager: ObservableObject {
             }
             scheduleEnd(after: 15)
 
-        case .running:
+        case .running(let detail):
             endWorkItem?.cancel()
-            update(statusText: "🧠 Думает…", isWaiting: false)
+            update(statusText: detail.map { "🧠 \($0)…" } ?? "🧠 Думает…", isWaiting: false)
 
         case .waitingApproval(let text):
             endWorkItem?.cancel()
@@ -46,6 +46,24 @@ final class LiveActivityManager: ObservableObject {
         } else {
             let attrs = DshActivityAttributes(title: "dsh")
             activity = try? Activity.request(attributes: attrs, content: ActivityContent(state: content, staleDate: nil))
+        }
+    }
+
+    /// Прогоняет демо-последовательность статусов локально, без подключения к dsh web —
+    /// чтобы можно было проверить, как выглядит Live Activity, когда телефон не в той же сети.
+    func simulateDemo() {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        endWorkItem?.cancel()
+        update(statusText: "🧠 Думает…", isWaiting: false)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+            self?.update(statusText: "🧠 Пишет код…", isWaiting: false)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
+            self?.update(statusText: "Нужно подтверждение: Edit", isWaiting: true)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 9) { [weak self] in
+            self?.update(statusText: "🟢 Свободен", isWaiting: false)
+            self?.scheduleEnd(after: 15)
         }
     }
 

@@ -76,6 +76,13 @@ struct ContentView: View {
             Spacer()
 
             Button {
+                NotificationManager.fire(title: "dsh", body: "Тестовое уведомление — всё работает")
+                activity.simulateDemo()
+            } label: {
+                Image(systemName: "bell.badge")
+            }
+
+            Button {
                 showSettings = true
             } label: {
                 Image(systemName: "gearshape")

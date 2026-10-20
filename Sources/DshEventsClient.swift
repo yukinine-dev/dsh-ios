@@ -1,10 +1,14 @@
 import Foundation
 
 /// Состояние агента, которое показываем в уведомлениях и Live Activity.
+/// detail у .running — лучшее предположение о том, чем агент занят прямо сейчас
+/// (думает / пишет код / читает файлы / выполняет команду), см. activityDetail(for:value:)
+/// в DshEventsClient. Точный протокол dsh web для таких событий не документирован тут,
+/// так что это эвристика по названию события/инструмента, а не гарантированный факт.
 enum DshState: Equatable {
     case disconnected
     case idle
-    case running
+    case running(detail: String?)
     case waitingApproval(String)
 }
 
@@ -25,6 +29,10 @@ final class DshEventsClient: NSObject, ObservableObject {
     private var base: String = ""
     private var token: String = ""
     private var cookie: String?
+
+    /// Последняя известная "чем занят" подсказка, пока сессия running — переживает
+    /// повторные api-session/status(true), но сбрасывается, когда сессия становится idle.
+    private var lastRunningDetail: String?
 
     func start(serverURL: URL) {
         stop()
@@ -153,7 +161,12 @@ final class DshEventsClient: NSObject, ObservableObject {
                   let args = value["args"] as? [Any], args.count >= 2,
                   let running = args[1] as? Bool else { return }
             if case .waitingApproval = state { return } // ожидание подтверждения приоритетнее статуса сессии
-            state = running ? .running : .idle
+            if running {
+                state = .running(detail: lastRunningDetail)
+            } else {
+                lastRunningDetail = nil
+                state = .idle
+            }
         case "waterfall":
             guard let event = value["event"] as? String else { return }
             if event == "approval/request" {
@@ -162,9 +175,49 @@ final class DshEventsClient: NSObject, ObservableObject {
                 state = .waitingApproval("Нужно подтверждение: \(toolName)")
             } else if event == "user-questions/request" {
                 state = .waitingApproval("Агент задал вопрос")
+            } else if let detail = activityDetail(for: event, value: value) {
+                lastRunningDetail = detail
+                if case .running = state { state = .running(detail: detail) }
             }
         default:
             break
+        }
+    }
+
+    /// Best-effort подсказка "чем занят агент" по имени waterfall-события и, если есть,
+    /// имени инструмента в нём. Протокол dsh web не документирован в этом репозитории —
+    /// если имена событий/инструментов другие, просто ничего не подсветится (безопасный
+    /// fallback — останется общее "🧠 Думает…").
+    private func activityDetail(for event: String, value: [String: Any]) -> String? {
+        let lower = event.lowercased()
+        let request = value["request"] as? [String: Any]
+        if let toolName = request?["toolName"] as? String, lower.contains("tool") {
+            return toolLabel(for: toolName)
+        }
+        if lower.contains("tool") {
+            return "Выполняет действие"
+        }
+        if lower.contains("think") || lower.contains("reason") {
+            return "Думает"
+        }
+        if lower.contains("message") || lower.contains("text") || lower.contains("answer") {
+            return "Пишет ответ"
+        }
+        return nil
+    }
+
+    private func toolLabel(for toolName: String) -> String {
+        switch toolName.lowercased() {
+        case "edit", "write", "multiedit", "notebookedit":
+            return "Пишет код"
+        case "read":
+            return "Читает файлы"
+        case "bash", "shell", "terminal":
+            return "Выполняет команду"
+        case "grep", "glob", "search":
+            return "Ищет по коду"
+        default:
+            return "Выполняет: \(toolName)"
         }
     }
 
